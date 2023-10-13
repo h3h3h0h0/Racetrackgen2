@@ -2,6 +2,7 @@
 #include <random>
 #include <limits>
 #include <math.h>
+#include <cfloat>
 
 using namespace std;
 
@@ -11,7 +12,8 @@ class NoiseGenerator {
     double *values;
     public:
         NoiseGenerator(int l, int w, unsigned int seed); //pregenerates using default values
-        void regenerate(double xf, double yf, double pow);
+        ~NoiseGenerator();
+        void regenerate(double power, int detail);
         int getLength();
         int getWidth();
         double *getValues(); //DEALLOCING VALUE ARRAY IS RESPONSIBILITY OF USER!
