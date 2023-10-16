@@ -6,10 +6,15 @@
 
 using namespace std;
 
+//generator for arrays of normalized noise with various specifications
 class NoiseGenerator {
     int length, width;
     PerlinNoise *pn; //sometimes may be redeclared for seeding purposes
     double *values;
+
+    const double defaultPower = 1;
+    const double defaultDetail = 1;
+    
     public:
         NoiseGenerator(int l, int w, unsigned int seed); //pregenerates using default values
         ~NoiseGenerator();

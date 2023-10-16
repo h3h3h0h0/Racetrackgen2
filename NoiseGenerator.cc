@@ -3,7 +3,7 @@
 using namespace std;
 
 NoiseGenerator::NoiseGenerator(int l, int w, unsigned int seed): length{l}, width{w}, pn{new PerlinNoise{seed}}, values{new double[length*width]} {
-    regenerate(1, 1);
+    regenerate(defaultPower, defaultDetail);
 }
 NoiseGenerator::~NoiseGenerator() {
     delete pn;
