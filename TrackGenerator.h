@@ -11,6 +11,7 @@ class TrackGenerator {
     double ld, wd; //"real" dimensions
     int ls, ws; //number of samples (i.e. dimensions of noise array)
     double *noiseArray;
+    const unsigned int attempts = 10; //will attempt this many times at most to generate
     public:
         TrackGenerator(double l, double w, int sl, int sw, unsigned int seed=0);
         ~TrackGenerator();
