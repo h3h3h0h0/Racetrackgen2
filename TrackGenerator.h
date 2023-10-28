@@ -3,6 +3,8 @@
 #include <tuple> //this will be used for the coordinates of points in 3d space
 #include <vector>
 #include <cstdlib>
+#include <random>
+#include <cmath>
 
 using namespace std;
 
