@@ -2,10 +2,10 @@
 
 using namespace std;
 
-TrackGenerator::TrackGenerator(double l, double w, int sl, int sw, unsigned int seed=0): 
+TrackGenerator::TrackGenerator(double l, double w, int sl, int sw, double hs, unsigned int seed=0): 
 ng{new NoiseGenerator{sl, sw, (seed == 0? (unsigned int)(rand()*4294967295) : seed)}}, 
 ld{l}, wd{w}, ls{sl}, ws{sw}, 
-noiseArray{ng->getValues()} {}
+noiseArray{ng->getValues()}, heightScale{(hs > 0)? hs : 1} {}
 
 TrackGenerator::~TrackGenerator() {
     delete [] noiseArray;
@@ -18,6 +18,10 @@ void TrackGenerator::renoise(double power, int detail) {
     noiseArray = ng->getValues();
 }
 
+void TrackGenerator::setHS(double nhs) {
+    heightScale = (nhs > 0)? nhs : heightScale;
+}
+
 //line segment intersection checking (most efficient way I could find)
 bool ccw(pair<double, double> a, pair<double, double> b, pair<double, double> c) {
     return (c.second-a.second)*(b.first-a.first) > (b.second-a.second)*(c.first-a.first);
@@ -28,18 +32,28 @@ bool segIntersect(pair<double, double> p11, pair<double, double> p12, pair<doubl
 
 //will call this repeatedly until it is not stuck
 //if stuck, returns empty vector
-vector<tuple<double, double, double>> genWS(vector<pair<double, double>> &pts, int start, double len, double maxgradient, double mindist, double maxdist) {
+vector<tuple<double, double, double>> TrackGenerator::genWS(vector<pair<double, double>> &pts, int start, double len, double maxgradient, double mindist, double maxdist) {
     vector<int> order;
+    vector<double> heights;
     vector<bool> vis;
     for(int i = 0; i < pts.size(); i++) vis.push_back(false);
     order.push_back(start);
+    vis[start] = true;
     double totaldist = 0;
     //current x and y
     double cx = pts[start].first;
     double cy = pts[start].second;
+    double cxs = cx*ls/ld;
+    double cys = cy*ws/wd;
+    int crp = cxs*ws+cys;
+    if(crp >= ls*ws) crp = ls*ws-1;
+    double ch = noiseArray[crp]*heightScale;
+    heights.push_back(ch);
     while(totaldist < len) {
         //potentially these points get added in
         vector<int> candidates;
+        vector<double> candH; //heights
+        vector<double> candD; //distances
         for(int i = 0; i < pts.size(); i++) {
             //check visited
             if(vis[i]) continue;
@@ -58,10 +72,39 @@ vector<tuple<double, double, double>> genWS(vector<pair<double, double>> &pts, i
                 }
             }
             if(inter) continue;
-            //CONTINUE HERE!
+            //check gradients
+            //generate scaled x/y values
+            double pxs = px*ls/ld;
+            double pys = py*ws/wd;
+            //generate points for polling noise array
+            int prp = pxs*ws+pys;
+            //take nearest point for each
+            if(prp >= ls*ws) prp = ls*ws-1;
+            //get heights
+            double ph = noiseArray[prp]*heightScale;
+            double hd = abs(ph-ch);
+            double gradient = hd/dist;
+            if(gradient > maxgradient) continue;
+            //finally, we can push back a potential candidate
+            candidates.push_back(i);
+            candH.push_back(ph);
+            candD.push_back(dist);
         }
+        if(candidates.empty()) break;
+        int ci = rand()*candidates.size();
+        order.push_back(candidates[ci]);
+        vis[candidates[ci]] = true;
+        heights[candidates[ci]] = candH[ci];
+        totaldist += candD[ci];
+        cx = pts[candidates[ci]].first;
+        cy = pts[candidates[ci]].second;
+        ch = candH[ci];
     }
     vector<tuple<double, double, double>> fin;
+    if(totaldist < len) return fin; //it got stuck at some point
+    for(int i = 0; i < order.size(); i++) {
+        fin.push_back(make_tuple(pts[order[i]].first, pts[order[i]].second, heights[i]));
+    }
     return fin;
 }
 
